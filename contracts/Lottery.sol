@@ -170,7 +170,7 @@ contract Lottery is VRFConsumerBaseV2, KeeperCompatibleInterface {
         return NUM_WORDS;
     }
 
-    function getRequestConfirmations() public pur returns (uint256) {
+    function getRequestConfirmations() public pure returns (uint256) {
         return REQUEST_CONFIRMATIONS;
     }
 }
