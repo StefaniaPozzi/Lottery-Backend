@@ -28,14 +28,16 @@ contract Lottery is VRFConsumerBaseV2, KeeperCompatibleInterface {
     event EventLottery__TicketBuyed(address indexed player); //tracking state is cheaper with events than storing in a var
     event EventLottery__RequestRandomWords(uint256 indexed requestId);
     event EventLottery__WinnerSelectedAndPaid(address indexed winner);
+    event EventLottery__IsUpkeepTrue(bool indexed upkeep);
     error ErrorLottery__InsufficientTicketAmount();
     error ErrorLottery__PayingWinnerFailed();
     error ErrorLottery__Busy();
-    error ErrorLottery__PerformUpkeepNotNeeded(
-        uint256 currentBalance,
-        uint256 numPlayers,
-        uint256 lotteryState
-    );
+    error ErrorLottery__PerformUpkeepNotNeeded();
+
+    //     uint256 currentBalance,
+    //     uint256 numPlayers,
+    //     uint256 lotteryState
+    // );
 
     /**
      * @dev the constructor of VRFConsumerBaseV2 is called
@@ -88,7 +90,12 @@ contract Lottery is VRFConsumerBaseV2, KeeperCompatibleInterface {
             i_pickWinnerInterval);
         bool hasPlayers = (s_players.length > 0);
         bool hasBalance = (address(this).balance > 0);
-        upkeepNeeded = (isOpen && isIntervalPassed && hasPlayers && hasBalance);
+        bool fireCondition = (isOpen &&
+            isIntervalPassed &&
+            hasPlayers &&
+            hasBalance);
+        emit EventLottery__IsUpkeepTrue(fireCondition);
+        upkeepNeeded = fireCondition;
     }
 
     /**
@@ -104,12 +111,11 @@ contract Lottery is VRFConsumerBaseV2, KeeperCompatibleInterface {
     function performUpkeep(bytes calldata /*performData*/) external override {
         s_lotteryState = LotteryState.BUSY;
         (bool upkeepNeeded, ) = checkUpkeep("");
-        if (!upkeepNeeded)
-            revert ErrorLottery__PerformUpkeepNotNeeded(
-                address(this).balance,
-                s_players.length,
-                uint256(s_lotteryState)
-            );
+        if (!upkeepNeeded) revert ErrorLottery__PerformUpkeepNotNeeded();
+        // address(this).balance,
+        // s_players.length,
+        // uint256(s_lotteryState)
+        // );
         uint256 requestId = i_coordinator.requestRandomWords(
             i_gasLane,
             i_subscriptionId,
@@ -139,6 +145,10 @@ contract Lottery is VRFConsumerBaseV2, KeeperCompatibleInterface {
         emit EventLottery__WinnerSelectedAndPaid(recentWinner);
     }
 
+    function setState(LotteryState _state) public {
+        s_lotteryState = _state;
+    }
+
     /* Pure and View functions */
     //is not possible to automatise this? like lombok
     function getTicketPrice() public view returns (uint256) {
@@ -163,6 +173,10 @@ contract Lottery is VRFConsumerBaseV2, KeeperCompatibleInterface {
 
     function getLatestTimestamp() public view returns (uint256) {
         return s_previousBlockTimestamp;
+    }
+
+    function getInterval() public view returns (uint256) {
+        return i_pickWinnerInterval;
     }
 
     // reading from bytecode

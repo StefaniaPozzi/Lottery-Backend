@@ -1,12 +1,13 @@
 const { network } = require("hardhat")
-const { networkConfig } = require( "../helper.hardhat.config" )
+const { networkConfig, devChains } = require("../helper-hardhat-config")
+const { verify } = require("../utils/verify")
+const VRF_SUB_AMOUNT = ethers.utils.parseEther("10")
 
-const VRF_SUB_AMOUNT = ethers.utils.parseEther("10");
 module.exports = async ({ getNamedAccounts, deployments }) => {
   const { deploy, log } = deployments
   const { deployer } = await getNamedAccounts()
-  const chainId = network.config.chainId;
-  let vrfCoordinatorV2Address, subId;
+  const chainId = network.config.chainId
+  let vrfCoordinatorV2Address, subId
 
   if (devChains.includes(network.name)) {
     const vrfCoordinatorV2Mock = await ethers.getContract(
@@ -14,27 +15,38 @@ module.exports = async ({ getNamedAccounts, deployments }) => {
     )
     vrfCoordinatorV2Address = vrfCoordinatorV2Mock.address
     //create subscription
-    const txRs = await vrfCoordinatorV2Mock.createSubscription();
-    const txReceipt  = await txRs.await(1); 
+    const txRs = await vrfCoordinatorV2Mock.createSubscription()
+    const txReceipt = await txRs.wait(1)
     subId = txReceipt.events[0].args.subId
     //fund the subscription
-    await vrfCoordinatorV2Mock.fundSubscriptionId(subId, VRF_SUB_AMOUNT)
+    await vrfCoordinatorV2Mock.fundSubscription(subId, VRF_SUB_AMOUNT)
   } else {
-    vrfCoordinatorV2Address = networkConfig[chainId]["vrfCoordinatorAddress"];
-    subId = networkConfig[chainId]["subId"];
-
+    vrfCoordinatorV2Address = networkConfig[chainId]["vrfCoordinatorAddress"]
+    subId = networkConfig[chainId]["subId"]
   }
-  const entranceFee = networkConfig[chainId]["entranceFee"];
-  const gasLane = networkConfig[chainId]["gasLane"];
-  const args = [vrfCoordinatorV2Address, 
-    entranceFee, gasLane];
+  const entranceFee = networkConfig[chainId]["entranceFee"]
+  const gasLane = networkConfig[chainId]["gasLane"]
+  const callbackGasLimit = networkConfig[chainId]["callbackGasLimit"]
+  const interval = networkConfig[chainId]["interval"]
+  const args = [
+    vrfCoordinatorV2Address,
+    entranceFee,
+    gasLane,
+    subId,
+    callbackGasLimit,
+    interval,
+  ]
 
-    const lottery = await deploy("Lottery", {
-      from: deployer,
-      args: args,
-      log: true,
-      waitConfirmations: network.config.blockConfirmations || 1,
-    })
+  const lottery = await deploy("Lottery", {
+    from: deployer,
+    args: args,
+    log: true,
+    waitConfirmations: network.config.blockConfirmations || 1,
+  })
+
+  if (!devChains.includes(network.name) && process.env.VERIFY_ETHSCAN_API) {
+    log("Verifying..")
+    await verify(lottery.address, args)
   }
 }
 
