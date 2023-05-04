@@ -104,7 +104,7 @@ contract Lottery is VRFConsumerBaseV2, KeeperCompatibleInterface {
      * This is a 2 tx process (no simulation can be performed)
      * 1. request the random number - performUpkeep
      * 2. number is returned from the chainlink and then we send money to the winner - fulfillRandomWords
-     * @notice Fase 1: custom name
+     * @notice Fase 1 KEEPEERS: custom name
      * external are cheaper than public functions
      */
     function performUpkeep(bytes calldata /*performData*/) external override {
@@ -127,7 +127,7 @@ contract Lottery is VRFConsumerBaseV2, KeeperCompatibleInterface {
     }
 
     /**
-     * @notice Fase 2: chainlink coordinator that does the random number verification,
+     * @notice Fase 2 VRF: chainlink coordinator that does the random number verification,
      * knows that he can call this method
      * */
     function fulfillRandomWords(

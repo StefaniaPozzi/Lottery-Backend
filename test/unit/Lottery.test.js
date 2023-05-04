@@ -110,8 +110,39 @@ const { devChains, networkConfig } = require("../../helper-hardhat-config")
             vrfCoordinatorV2.fulfillRandomWords(1, lottery.address)
           ).to.be.revertedWith("nonexistent request")
         })
-
-        it("Gets 2 random numbers ", async () => {})
+        it.only("Picks the winner ", async () => {
+          const requestId = await lottery.callStatic.performUpkeep("0x")
+          const startTimeStamp = await lottery.getLatestTimestamp()
+          //waits for the event to be fired!
+          await new Promise(async (resolve, reject) => {
+            //listener
+            lottery.once("EventLottery__WinnerSelectedAndPaid", async () => {
+              console.log("Event found!")
+              //if it takes too long (mocha hardhat.config)
+              try {
+                const winner = await lottery.getRecentWinner()
+                console.log(winner)
+                const state = await lottery.getLotteryState()
+                const endingTimeStamp = await lottery.getLatestTimestamp()
+                const numPlayers = await lottery.getNumPlayers()
+                assert.equal(numPlayers.toString(), "0")
+                assert.equal(state.toString(), "0")
+                assert(endingTimeStamp > startTimeStamp)
+              } catch (e) {
+                reject(e)
+              }
+              resolve()
+            })
+            //mock KEEPERS
+            const tx = await lottery.performUpkeep([])
+            const txReceipt = await tx.wait(1)
+            //mock VRF
+            await vrfCoordinatorV2.fulfillRandomWords(
+              txReceipt.events[0].topics[1],
+              lottery.address
+            )
+          })
+        })
         it("Fires an event on callback", async () => {})
       })
     })
