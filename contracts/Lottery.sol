@@ -32,12 +32,11 @@ contract Lottery is VRFConsumerBaseV2, KeeperCompatibleInterface {
     error ErrorLottery__InsufficientTicketAmount();
     error ErrorLottery__PayingWinnerFailed();
     error ErrorLottery__Busy();
-    error ErrorLottery__PerformUpkeepNotNeeded();
-
-    //     uint256 currentBalance,
-    //     uint256 numPlayers,
-    //     uint256 lotteryState
-    // );
+    error ErrorLottery__PerformUpkeepNotNeeded(
+        uint256 currentBalance,
+        uint256 numPlayers,
+        uint256 lotteryState
+    );
 
     /**
      * @dev the constructor of VRFConsumerBaseV2 is called
@@ -109,13 +108,15 @@ contract Lottery is VRFConsumerBaseV2, KeeperCompatibleInterface {
      * external are cheaper than public functions
      */
     function performUpkeep(bytes calldata /*performData*/) external override {
-        s_lotteryState = LotteryState.BUSY;
         (bool upkeepNeeded, ) = checkUpkeep("");
-        if (!upkeepNeeded) revert ErrorLottery__PerformUpkeepNotNeeded();
-        // address(this).balance,
-        // s_players.length,
-        // uint256(s_lotteryState)
-        // );
+        if (!upkeepNeeded)
+            revert ErrorLottery__PerformUpkeepNotNeeded(
+                address(this).balance,
+                s_players.length,
+                uint256(s_lotteryState)
+            );
+        s_lotteryState = LotteryState.BUSY;
+        //it emits a requestId
         uint256 requestId = i_coordinator.requestRandomWords(
             i_gasLane,
             i_subscriptionId,
@@ -123,7 +124,6 @@ contract Lottery is VRFConsumerBaseV2, KeeperCompatibleInterface {
             i_callbackGasLimit,
             NUM_WORDS
         );
-        emit EventLottery__RequestRandomWords(requestId);
     }
 
     /**
@@ -155,7 +155,7 @@ contract Lottery is VRFConsumerBaseV2, KeeperCompatibleInterface {
         return i_ticketPrice;
     }
 
-    function getPlayers(uint256 index) public view returns (address payable) {
+    function getPlayer(uint256 index) public view returns (address payable) {
         return s_players[index];
     }
 
