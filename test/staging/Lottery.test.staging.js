@@ -23,9 +23,9 @@ devChains.includes(network.name)
           await new Promise(async (resolve, reject) => {
             console.log("enters the promise")
             lottery.once("EventLottery__WinnerSelectedAndPaid", async () => {
-              console.log("Winner picked")
               try {
                 const winner = await lottery.getRecentWinner()
+                console.log(`Winner picked ${winner}`)
                 const state = await lottery.getLotteryState()
                 const winnerBalance = await accounts[0].getBalance()
                 const endingTimeStamp = await lottery.getLatestTimestamp()
