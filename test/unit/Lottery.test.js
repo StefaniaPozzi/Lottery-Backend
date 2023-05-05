@@ -110,15 +110,15 @@ const { devChains, networkConfig } = require("../../helper-hardhat-config")
             vrfCoordinatorV2.fulfillRandomWords(1, lottery.address)
           ).to.be.revertedWith("nonexistent request")
         })
-        it.only("Picks the winner ", async () => {
+        it("Picks the winner ", async () => {
           const requestId = await lottery.callStatic.performUpkeep("0x")
           const startTimeStamp = await lottery.getLatestTimestamp()
-          //waits for the event to be fired!
+          // waits for the event to be fired:
+          // on testnet we never know when the tx will finish
           await new Promise(async (resolve, reject) => {
             //listener
             lottery.once("EventLottery__WinnerSelectedAndPaid", async () => {
               console.log("Event found!")
-              //if it takes too long (mocha hardhat.config)
               try {
                 const winner = await lottery.getRecentWinner()
                 console.log(winner)
@@ -128,10 +128,11 @@ const { devChains, networkConfig } = require("../../helper-hardhat-config")
                 assert.equal(numPlayers.toString(), "0")
                 assert.equal(state.toString(), "0")
                 assert(endingTimeStamp > startTimeStamp)
+                resolve()
               } catch (e) {
+                //if it takes too long (mocha hardhat.config)
                 reject(e)
               }
-              resolve()
             })
             //mock KEEPERS
             const tx = await lottery.performUpkeep([])
@@ -143,6 +144,5 @@ const { devChains, networkConfig } = require("../../helper-hardhat-config")
             )
           })
         })
-        it("Fires an event on callback", async () => {})
       })
     })
