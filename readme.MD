@@ -3,6 +3,6 @@
 ### How to run the staging tests
 
 1. create a subscription in the VRF user interfacee
-2. deploy the contract and add Lottery as consumer
+2. deploy the contract and add Lottery as consumer ` hh deploy --network sepolia`
 3. add the same consumer to Keepers
-4. run staging tests with `hh test`
+4. run staging tests with `hh test --network sepolia`
