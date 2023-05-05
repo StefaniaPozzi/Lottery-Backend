@@ -18,7 +18,7 @@ devChains.includes(network.name)
         it.only("picks a random winner", async () => {
           const startingTimeStamp = await lottery.getLatestTimestamp()
 
-          const accounts = await lottery.getSigners()
+          const accounts = await ethers.getSigners()
           //setup the listener before everything, in case the bc moves fast
           await new Promise(async (resolve, reject) => {
             lottery.once("EventLottery__WinnerSelectedAndPaid", async () => {
@@ -28,7 +28,7 @@ devChains.includes(network.name)
                 const state = await lottery.getLotteryState()
                 const winnerBalance = await accounts[0].getBalance()
                 const endingTimeStamp = await lottery.getLatestTimestamp()
-                assert
+                assert(endingTimeStamp > startingTimeStamp)
                 resolve()
               } catch (e) {
                 reject(e)
