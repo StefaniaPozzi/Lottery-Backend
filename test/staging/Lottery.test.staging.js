@@ -17,10 +17,11 @@ devChains.includes(network.name)
       describe("fulfillRandomWords", () => {
         it.only("picks a random winner", async () => {
           const startingTimeStamp = await lottery.getLatestTimestamp()
-
           const accounts = await ethers.getSigners()
+
           //setup the listener before everything, in case the bc moves fast
           await new Promise(async (resolve, reject) => {
+            console.log("enters the promise")
             lottery.once("EventLottery__WinnerSelectedAndPaid", async () => {
               console.log("Winner picked")
               try {
@@ -31,17 +32,17 @@ devChains.includes(network.name)
                 assert(endingTimeStamp > startingTimeStamp)
                 resolve()
               } catch (e) {
+                console.log(e)
                 reject(e)
               }
             })
+            console.log("buys the ticket")
+            await lottery.buyTicket({
+              value: ticketFee,
+            })
+            const winnerStartingBalance = await accounts[0].getBalance()
+            console.log(`winnerStartingBalance ${winnerStartingBalance}`)
           })
-
-          await lottery.buyTicket({
-            value: ticketFee,
-          })
-          const winnerStartingBalance = await accounts[0].getBalance()
-
-          //the following part will be execute after the promise has been resolved
         })
       })
     })
