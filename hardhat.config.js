@@ -35,6 +35,9 @@ module.exports = {
       default: 1,
     },
   },
+  etherscan: {
+    apiKey: ETHSCAN_API,
+  },
   gasReporter: {
     enabled: false,
   },
